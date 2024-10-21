@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Post API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+
+        input, button, textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        textarea {
+            height: 100px;
+        }
+
+        .posts {
+            margin-top: 30px;
+        }
+
+        .post {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Blog Post API</h1>
+
+    <h2>Create Post</h2>
+    <form id="create-post-form">
+        <input type="text" id="post-title" placeholder="Title" required>
+        <textarea id="post-content" placeholder="Content" required></textarea>
+        <button type="submit">Create Post</button>
+    </form>
+
+    <h2>Search Posts</h2>
+    <form id="search-posts-form">
+        <input type="text" id="search-query" placeholder="Search by title">
+        <button type="submit">Search</button>
+    </form>
+
+    <h2>Posts</h2>
+    <div id="posts" class="posts"></div>
+</div>
+
+<script>
+    const API_URL = 'http://127.0.0.1:5000/posts';
+
+    document.getElementById('create-post-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const title = document.getElementById('post-title').value;
+        const content = document.getElementById('post-content').value;
+
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ title, content })
+        });
+
+        if (response.status === 201) {
+            alert('Post created!');
+            document.getElementById('post-title').value = '';
+            document.getElementById('post-content').value = '';
+            fetchPosts();  // Reload posts after creating
+        } else {
+            alert('Failed to create post.');
+        }
+    });
+
+    document.getElementById('search-posts-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const query = document.getElementById('search-query').value;
+
+        const response = await fetch(`http://127.0.0.1:5000/search?q=${query}`, {
+            method: 'GET',
+        });
+
+        const posts = await response.json();
+        displayPosts(posts);
+    });
+
+    async function fetchPosts() {
+        const response = await fetch(API_URL);
+        const posts = await response.json();
+        displayPosts(posts);
+    }
+
+    function displayPosts(posts) {
+        const postsContainer = document.getElementById('posts');
+        postsContainer.innerHTML = '';
+        posts.forEach(post => {
+            const postElement = document.createElement('div');
+            postElement.classList.add('post');
+            postElement.innerHTML = `
+                <h3>${post.title}</h3>
+                <p>${post.content}</p>
+                <button onclick="deletePost(${post.id})">Delete</button>
+            `;
+            postsContainer.appendChild(postElement);
+        });
+    }
+
+    async function deletePost(id) {
+        const response = await fetch(`${API_URL}/${id}`, {
+            method: 'DELETE',
+        });
+        if (response.status === 200) {
+            alert('Post deleted!');
+            fetchPosts();  // Reload posts after deletion
+        } else {
+            alert('Failed to delete post.');
+        }
+    }
+
+    // Initial fetch to display posts on load
+    fetchPosts();
+</script>
+
+</body>
+</html>
